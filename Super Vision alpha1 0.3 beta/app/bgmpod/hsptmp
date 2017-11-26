@@ -1,0 +1,71 @@
+*home
+title"BGM pod 1.0 "
+picload"png/背景.jpg"
+celload"ico/読み込み.bmp",1
+pos 500,0
+objimage 1, 680, 0, 0, 0
+objsize 100,100
+button"",*a
+celload"ico/down.bmp",2
+pos 600,0
+objimage 2, 680, 0, 0, 0
+objsize 101,101
+button"",*b
+celload"ico/end.bmp",3
+pos 700,0
+objimage 3, 680, 0, 0, 0
+objsize 101,101
+button"",*c
+celload"ico/next.png",4
+pos 0,300
+objimage 4, 680, 0, 0, 0
+objsize 101,101
+button"",*play
+celload"ico/stop.png",5
+pos 100,300
+objimage 5, 680, 0, 0, 0
+objsize 100,100
+button"",*sto
+celload"ico/aeq.png",6
+pos 200,300
+objimage 6, 680, 0, 0, 0
+objsize 100,100
+button"",*em
+stop
+
+
+*play
+	mci "play HSP" ; 再生
+repeat
+mci "status HSP position" ; 再生時間取得
+title "BGMpod 1.0 ["+strf("%02d",stat/1000/60)+":"+strf("%02d",stat/1000\60)+"]"
+await 100
+loop
+stop
+
+*a
+dialog "wav;*.mp3;*.mid;*.wma", 16, "音楽ファイル"
+if stat=0:stop
+file=refstr
+mci "open \""+refstr+"\" type mpegvideo alias HSP" ; ファイルオープン
+exist file
+sdim id3_data,0x80
+bload file, id3_data,,strsize-0x80 ; ID3タグを確認
+if wpeek(id3_data,0)!0x4154 : stop
+dialog "読み込みが完了しました。",p1,"メッセージ"
+stop
+
+*b
+stop
+
+*c
+end
+
+*sto
+mci "stop HSP" ; 再生停止
+stop
+
+*em
+mci "close HSP" ; 再生停止
+stop
+

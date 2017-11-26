@@ -1,0 +1,225 @@
+　#define use_64bit
+#ifdef use_64bit
+#runtime "hsp3_64"
+#endif
+title"Super Vision alpha2"
+celload"png/power.bmp",1 
+celload"png/cals.bmp",2
+celload"png/music.bmp",5
+celload"png/option.bmp",8
+celload"png/web.bmp",18
+celload"png/kitune.bmp",21
+celload"png/back.bmp",23
+celload"png/enter.bmp",25
+celload"png/desk.bmp",27
+celload"pngs/ico.bmp",30
+celload"pngs/web.bmp",32
+celload"pngs/cals.bmp",34
+celload"pngs/music.bmp",38
+celload"pngs/option.bmp",36
+celload"pngs/shutdown.bmp",40
+celload"pngs/desktopz.bmp",50
+#include "hgimg3.as"
+dir_cur_bak=dir_cur
+onexit gosub *ending
+//www.geocities.jp/inaeggmon/hgimg3/01-02.htmlから拝借
+    screen 0,800,600 
+    hgini 
+    addbox model,10.0,10.0 
+    regobj object,model 
+     //ここまでが生成 
+repeat 200
+ky&1:addang object,,-0.1 
+
+ 
+    hgdraw 
+    hgsync 20 
+loop
+//ここまでが回転　次の行からが画像表示
+picload"png/desktop.png"
+wait 400
+mmload"se/start.mp3":mmplay
+*starts
+picload"png/menu.png"
+pos 300,0
+objsize 100,100
+objimage 27, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*desktopap
+pos 700,10
+objsize 100,100
+objimage 1, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*power
+pos 0,100
+objsize 200,100
+objimage 2, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*cals
+pos 225,100
+objsize 200,100
+objimage 5, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*music
+pos 450,100
+objsize 200,100
+objimage 8, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*option
+pos 0,300
+objsize 200,100
+objimage 18, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*web
+pos 255,300
+objsize 200,100
+objimage 21, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*kitune
+stop
+
+*desktopap
+notesel buf
+noteload "user/name.txt"
+picload"pngs/desktop.bmp"
+pos 0,0
+objsize 30,30
+objimage 50, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*starts
+pos 0,570
+objsize 100,20
+objimage 30, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*menu
+stop
+
+*menu
+picload"pngs/desktop2.bmp"
+pos 0,0
+objsize 30,30
+objimage 50, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*starts
+pos 0,320
+mes buf
+pos 0,360
+objsize 200,30
+objimage 32, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button"",*web
+pos 0,400
+objsize 200,30
+objimage 34, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button"",*cals
+pos 0,440
+objsize 200,30
+objimage 36, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button"",*option
+pos 0,480
+objsize 200,30
+objimage 38, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button"",*music
+pos 0,520
+objsize 200,30
+objimage 40, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button"",*power
+pos 0,570
+objsize 100,20
+objimage 30, 0,0, 0,1, 0,1 ; ボタン画像の指定
+button "",*desktopap
+stop
+
+*kitune
+picload"png/AI.png"
+pos 0,0
+objsize 100,100
+objimage 23, 0,0, 0,0, 0,0 ; ボタン画像の指定
+button "",*starts
+pos 200,300
+input pazz, 500, 22
+mes""
+objsize 100,100
+objimage 25, 0,0, 0,0, 0,0 ; ボタン画像の指定
+button "",*junpd
+stop
+
+*junpd
+if pazz = "インターネット" :goto *web :else :goto *matigai
+stop
+*matigai
+if pazz = "電卓" :goto *cals :else :goto *matigai1
+*matigai1
+if pazz = "設定" :goto *option :else :goto *matigai2
+*matigai2
+mes"Wath?"
+stop
+
+*option
+screen 640,480
+mes"version:SuperVision0.2(64bit)"
+mes""
+mes"PC関連"
+mes "メモリ合計: "+sysinfo(34) / 1024+" KB
+mes "CPUコア数"+sysinfo(17) +"個"
+mes""
+mes"ユーザー関連"
+notesel buf
+noteload "user/name.txt"
+mes"ユーザーネーム"+buf
+button"変更",*names
+stop
+
+*names
+screen 400,300
+mes"現在のユーザーネーム:"+buf
+mes"新しいUserName:":input value1, 500, 22
+button"Enter",*enter
+stop
+
+*enter
+notedel 0
+noteadd ""+value1+"",0
+chdir dir_exe
+chdir dir_cur_bak
+notesave"user/name.txt"
+mes"変更が完了しました。"
+stop
+
+*web
+exec"app/swb2/hsptmp.exe"
+stop
+
+*music
+exec"app/bgmpod/hsptmp.exe"
+stop
+
+*cals
+	screen 640,480
+	title"電卓システム"
+*risetz
+	cls
+	button"リセット",*risetz
+	value1 = 0		; 整数値型変数
+value2 = 0			; 整数値型変数
+input value1, 500, 22
+button"+",*x
+button"-",*z
+button"×",*ad
+button"÷",*los
+input value2, 500, 22
+mes"||"
+stop
+*los
+mes value1 / value2
+stop
+*ad
+mes value1 * value2
+stop
+*z
+mes value1 - value2
+stop
+*x
+mes value1 + value2
+stop
+
+*power
+picload"png/off.png"
+mmload"se/off.mp3":mmplay
+wait 200
+end
+
+*ending
+if ginfo_act=0 : end
+gsel ginfo_act, -1
+gsel 0,1
+return

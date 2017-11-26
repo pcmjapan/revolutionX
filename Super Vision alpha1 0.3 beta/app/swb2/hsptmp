@@ -1,0 +1,317 @@
+
+#module _Mod_Reg_
+// 
+// レジストリの読み書きモジュール
+// 削除や列挙機能はなし
+// 
+#uselib "advapi32"
+#func RegQueryValueExA "RegQueryValueExA" int, str, int, int, int, int
+#func RegOpenKeyExA "RegOpenKeyExA" int, str, int, int, int
+#func RegCloseKey "RegCloseKey" int
+#func RegCreateKeyExA "RegCreateKeyExA" int, str, int, int, int, int, int, int, int
+#func RegSetValueExA "RegSetValueExA" int, str, int, int, int, int
+
+#define global HKEY_CLASSES_ROOT 		0x80000000
+#define global HKEY_CURRENT_USER 		0x80000001
+#define global HKEY_LOCAL_MACHINE 		0x80000002
+#define global HKEY_USERS 				0x80000003
+#define global HKEY_PERFORMANCE_DATA 	0x80000004
+#define global HKEY_CURRENT_CONFIG 		0x80000005
+#define global HKEY_DYN_DATA 			0x80000006
+
+#define KEY_QUERY_VALUE 	0x0001
+#define KEY_SET_VALUE		0x0002
+#define REG_SZ 				0x00000001
+#define REG_DWORD 			0x00000004
+
+//
+// GetLastErrorRegistryAPI - 本モジュール内で呼び出されたAPIの戻り値を取得します
+// 
+#defcfunc GetLastErrorRegistryAPI
+return lastRegAPIResult
+
+//
+// GetRegistryValueInt - 指定されたレジストリの値を数値型で読み込みます
+// 
+// 第1引数：	レジストリのサブツリー（ルートキー）を以下の定数で指定します
+// 　　　　		HKEY_CLASSES_ROOT
+// 　　　　		HKEY_CURRENT_USER
+// 　　　　		HKEY_LOCAL_MACHINE
+// 　　　　		HKEY_USERS
+// 　　　　		HKEY_PERFORMANCE_DATA
+// 　　　　		HKEY_CURRENT_CONFIG
+// 　　　　		HKEY_DYN_DATA
+//				が指定可能。
+// 第2引数：	レジストリのサブキーを文字列で指定します
+// 				例："SOFTWARE\\Microsoft\\Internet Explorer"
+// 第3引数：	レジストリエントリを文字列で指定します
+//				例："svcVersion"
+// 第4引数：	結果を受け取る変数を指定します
+// 
+// 戻り値：		マイナス値=エラー, それ以外=読込サイズ(bytes)
+// 
+#deffunc GetRegistryValueInt int subTree, str subKey, str regEntry, var ret
+
+	hRegKey = 0
+	ret = 0
+	RegOpenKeyExA subTree, subKey, 0, KEY_QUERY_VALUE, varptr(hRegKey)
+	lastRegAPIResult = stat
+	if 0 == hRegKey {
+		return -1
+	}
+	readBytes = 4
+	RegQueryValueExA hRegKey, regEntry, 0, 0, varptr(ret), varptr(readBytes)
+	lastRegAPIResult = stat
+	if lastRegAPIResult {
+		RegCloseKey hRegKey
+		return -2
+	}
+	RegCloseKey hRegKey
+	return readBytes
+
+//
+// GetRegistryValueStr - 指定されたレジストリの値を文字列型で読み込みます
+// 
+// 第1引数：	レジストリのサブツリー（ルートキー）を以下の定数で指定します
+// 　　　　		HKEY_CLASSES_ROOT
+// 　　　　		HKEY_CURRENT_USER
+// 　　　　		HKEY_LOCAL_MACHINE
+// 　　　　		HKEY_USERS
+// 　　　　		HKEY_PERFORMANCE_DATA
+// 　　　　		HKEY_CURRENT_CONFIG
+// 　　　　		HKEY_DYN_DATA
+//				が指定可能。
+// 第2引数：	レジストリのサブキーを文字列で指定します
+// 				例："SOFTWARE\\Microsoft\\Internet Explorer"
+// 第3引数：	レジストリエントリを文字列で指定します
+//				例："svcVersion"
+// 第4引数：	結果を受け取る変数を指定します
+// 
+// 戻り値：		マイナス値=エラー, それ以外=読込サイズ(bytes)
+// 
+#deffunc GetRegistryValueStr int subTree, str subKey, str regEntry, var ret
+
+	hRegKey = 0
+	sdim ret
+	RegOpenKeyExA subTree, subKey, 0, KEY_QUERY_VALUE, varptr(hRegKey)
+	lastRegAPIResult = stat
+	if 0 == hRegKey {
+		return -1
+	}
+	// 必要なサイズを取得します
+	readBytes = 0
+	RegQueryValueExA hRegKey, regEntry, 0, 0, 0, varptr(readBytes)
+	lastRegAPIResult = stat
+	if lastRegAPIResult {
+		RegCloseKey hRegKey
+		return -2
+	}
+	if 0 == readBytes {
+		RegCloseKey hRegKey
+		return readBytes
+	}
+	sdim ret, readBytes + 1 
+	RegQueryValueExA hRegKey, regEntry, 0, 0, varptr(ret), varptr(readBytes)
+	lastRegAPIResult = stat
+	if lastRegAPIResult {
+		RegCloseKey hRegKey
+		return -3
+	}
+	RegCloseKey hRegKey
+	return readBytes
+	
+//
+// SetRegistryValueInt - 指定されたレジストリの値を数値型で書き込みます
+// 
+// 第1引数：	レジストリのサブツリー（ルートキー）を以下の定数で指定します
+// 　　　　		HKEY_CLASSES_ROOT
+// 　　　　		HKEY_CURRENT_USER
+// 　　　　		HKEY_LOCAL_MACHINE
+// 　　　　		HKEY_USERS
+// 　　　　		HKEY_PERFORMANCE_DATA
+// 　　　　		HKEY_CURRENT_CONFIG
+// 　　　　		HKEY_DYN_DATA
+//				が指定可能。
+// 第2引数：	レジストリのサブキーを文字列で指定します
+// 				例："SOFTWARE\\Microsoft\\Internet Explorer"
+// 第3引数：	レジストリエントリを文字列で指定します
+//				例："svcVersion"
+// 第4引数：	書き込む値（数値型）
+// 
+// 戻り値：		マイナス値=エラー, 0=成功
+// 
+#deffunc SetRegistryValueInt int subTree, str subKey, str regEntry, int value
+	hRegKey = 0
+	RegCreateKeyExA subTree, subKey, 0, 0, 0, KEY_SET_VALUE, 0, varptr(hRegKey), 0
+	lastRegAPIResult = stat
+	if 0 == hRegKey {
+		return -1
+	}
+	_value = value
+	RegSetValueExA hRegKey, regEntry, 0, REG_DWORD, varptr(_value), 4
+	lastRegAPIResult = stat
+	if lastRegAPIResult {
+		RegCloseKey hRegKey
+		return -2
+	}
+	RegCloseKey hRegKey
+return 0
+
+//
+// SetRegistryValueStr - 指定されたレジストリの値を文字列型で書き込みます
+// 
+// 第1引数：	レジストリのサブツリー（ルートキー）を以下の定数で指定します
+// 　　　　		HKEY_CLASSES_ROOT
+// 　　　　		HKEY_CURRENT_USER
+// 　　　　		HKEY_LOCAL_MACHINE
+// 　　　　		HKEY_USERS
+// 　　　　		HKEY_PERFORMANCE_DATA
+// 　　　　		HKEY_CURRENT_CONFIG
+// 　　　　		HKEY_DYN_DATA
+//				が指定可能。
+// 第2引数：	レジストリのサブキーを文字列で指定します
+// 				例："SOFTWARE\\Microsoft\\Internet Explorer"
+// 第3引数：	レジストリエントリを文字列で指定します
+//				例："svcVersion"
+// 第4引数：	書き込む値（文字列型）
+// 
+// 戻り値：		マイナス値=エラー, 0=成功
+// 
+#deffunc SetRegistryValueStr int subTree, str subKey, str regEntry, str value
+	hRegKey = 0
+	RegCreateKeyExA subTree, subKey, 0, 0, 0, KEY_SET_VALUE, 0, varptr(hRegKey), 0
+	lastRegAPIResult = stat
+	if 0 == hRegKey {
+		return -1
+	}
+	strValueSize = strlen(value) + 1
+	sdim _value, strValueSize
+	_value = value
+	
+	RegSetValueExA hRegKey, regEntry, 0, REG_SZ, varptr(_value), strValueSize
+	lastRegAPIResult = stat
+	if lastRegAPIResult {
+		RegCloseKey hRegKey
+		return -2
+	}
+	RegCloseKey hRegKey
+return 0
+#global
+
+#module _mod_IE_Ver_
+#uselib "kernel32"
+#func GetModuleFileNameA "GetModuleFileNameA" int, int, int
+#define FEATURE_BROWSER_EMULATION "SOFTWARE\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION"
+#define FEATURE_GPU_RENDERING "SOFTWARE\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_GPU_RENDERING"
+#define FEATURE_USE_LEGACY_JSCRIPT "SOFTWARE\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_USE_LEGACY_JSCRIPT"
+
+// IEのバージョンを取得する関数
+#defcfunc GetIEVersion
+	GetRegistryValueStr HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Internet Explorer", "svcVersion", version
+	if stat <= 0 {
+		GetRegistryValueStr HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Internet Explorer", "Version", version
+	}
+	split version, ".", ieVer
+	if 0 < stat {
+		return ieVer(0)
+	}
+return ""
+// 現在のプロセス名を取得する関数
+#defcfunc GetProcessName
+	sdim exe_path, 260 + 1
+	GetModuleFileNameA 0, varptr(exe_path), 260
+return getpath(exe_path, 8)
+
+//
+// SetIEConfigEmulation
+// 指定されたIEのバージョンをエミュレーションするよう設定します。
+//
+// 第1引数：	IEのバージョンを文字列で指定します("9","10","11"など)
+//				GetIEVersion()関数を利用すると、インストールされているIEのバージョンを指定できます
+// 第2引数：	対象の実行ファイルの名前を指定します
+//				GetProcessName()関数を利用すると、実行中のプロセス名を指定できます
+// 戻り値：		マイナス値=エラー, 0=成功
+//
+#deffunc SetIEConfigEmulation str ieVersion, str exeName
+	SetRegistryValueInt HKEY_CURRENT_USER, FEATURE_BROWSER_EMULATION, exeName, int(ieVersion)*1000
+return stat
+
+//
+// SetIEConfigGPURendering
+// GPUを使用してレンダリングするよう設定します。
+//
+// 第1引数：	0 = GPUを使用しない
+//				1 = GPUを使用する
+// 第2引数：	対象の実行ファイルの名前を指定します
+//				GetProcessName()関数を利用すると、実行中のプロセス名を指定できます
+// 戻り値：		マイナス値=エラー, 0=成功
+//
+#deffunc SetIEConfigGPURendering int flag, str exeName
+	SetRegistryValueInt HKEY_CURRENT_USER, FEATURE_GPU_RENDERING, exeName, flag
+return stat
+
+//
+// SetIEConfigLegacyJScript
+// 古いJavaScriptエンジンを使用するよう設定します。
+//
+// 第1引数：	0 = 古いJavaScriptエンジンを使用しない（Chakraエンジン）
+//				1 = 古いJavaScriptエンジンを使用する（JScriptエンジン）
+// 第2引数：	対象の実行ファイルの名前を指定します
+//				GetProcessName()関数を利用すると、実行中のプロセス名を指定できます
+// 戻り値：		マイナス値=エラー, 0=成功
+//
+#deffunc SetIEConfigLegacyJScript int flag, str exeName
+	SetRegistryValueInt HKEY_CURRENT_USER, FEATURE_USE_LEGACY_JSCRIPT, exeName, flag
+return stat
+#global
+
+	// インストールされているバージョンをサポートするように設定する
+	// もし、IE11が入っている場合は、そのバージョンをサポートします。
+	SetIEConfigEmulation GetIEVersion(), GetProcessName()
+
+	// GPUを利用したレンダリングを行う
+	SetIEConfigGPURendering 1, GetProcessName()
+
+	// 古いJavaScriptエンジンを使用しない(Chakraエンジン)
+	SetIEConfigLegacyJScript 0, GetProcessName()
+
+	screen 0,1280,700
+title"Simple Web browser"
+value1 = "google.com"	; 文字列型変数
+
+#define DIID_DWebBrowserEvents2 "{34A715A0-6587-11D0-924A-0020AFC7AC4D}"
+#define DISPID_NAVIGATECOMPLETE2 252
+	input value1, 400, 22
+	pos 401,0
+	button"移動", *navigate
+	pos 465,0
+	button"←",*back
+	pos 530,0
+	button"→",*go
+	pos 600,0
+	button"更新",*riset
+pos 0,24
+	axobj IE, "Shell.Explorer.2", ginfo(10), 720
+ie->"Navigate" value1
+stop
+
+
+	
+*back
+	IE->"GoBack" 
+stop
+
+
+*riset
+	IE->"Refresh" 
+	 stop
+	 
+
+
+*navigate
+if value1 = "" : return
+	IE->"Navigate" value1
+stop
+
+*go
+	IE->"GoForward" 
